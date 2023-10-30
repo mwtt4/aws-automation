@@ -1,0 +1,21 @@
+import os
+import boto3
+
+# Get the account ID and role name from the user
+account_id = input("Enter the AWS account ID: ")
+role_name = input("Enter the IAM role name: ")
+
+# Create a session with the default credentials
+session = boto3.Session()
+
+# Assume the specified role
+sts = session.client('sts')
+response = sts.assume_role(
+    RoleArn=f"arn:aws:iam::{account_id}:role/{role_name}",
+    RoleSessionName="AssumeRoleSession"
+)
+
+# Export the temporary credentials as environment variables
+os.environ['AWS_ACCESS_KEY_ID'] = response['Credentials']['AccessKeyId']
+os.environ['AWS_SECRET_ACCESS_KEY'] = response['Credentials']['SecretAccessKey']
+os.environ['AWS_SESSION_TOKEN'] = response['Credentials']['SessionToken']
