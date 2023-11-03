@@ -12,3 +12,6 @@ export AWS_SECRET_ACCESS_KEY
 export AWS_SESSION_TOKEN
 
 # Agora você pode usar as variáveis de ambiente exportadas para autenticar suas chamadas da AWS
+
+
+echo -e "[profile temporary_profile]\naws_access_key_id = $AWS_ACCESS_KEY_ID\naws_secret_access_key = $AWS_SECRET_ACCESS_KEY\naws_session_token = $AWS_SESSION_TOKEN" >> ~/.aws/config
