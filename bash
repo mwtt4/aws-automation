@@ -4,12 +4,16 @@
 ROLE_ARN="ARN_DO_SEU_PAPEL"
 SESSION_NAME="NOME_DA_SESSAO"
 
-# Assuma o papel IAM e armazene as credenciais temporárias nas variáveis de ambiente
-role_credentials=$(aws sts assume-role --role-arn "$ROLE_ARN" --role-session-name "$SESSION_NAME")
+# Nome do arquivo para armazenar a saída JSON
+output_file="role_credentials.json"
 
-export AWS_ACCESS_KEY_ID=$(echo $role_credentials | jq -r '.Credentials.AccessKeyId')
-export AWS_SECRET_ACCESS_KEY=$(echo $role_credentials | jq -r '.Credentials.SecretAccessKey')
-export AWS_SESSION_TOKEN=$(echo $role_credentials | jq -r '.Credentials.SessionToken')
+# Assuma o papel IAM e redirecione a saída para um arquivo
+aws sts assume-role --role-arn "$ROLE_ARN" --role-session-name "$SESSION_NAME" > "$output_file"
+
+# Extraia as credenciais do arquivo
+AWS_ACCESS_KEY_ID=$(cat "$output_file" | grep -o '"AccessKeyId": "[^"]*' | cut -d'"' -f4)
+AWS_SECRET_ACCESS_KEY=$(cat "$output_file" | grep -o '"SecretAccessKey": "[^"]*' | cut -d'"' -f4)
+AWS_SESSION_TOKEN=$(cat "$output_file" | grep -o '"SessionToken": "[^"]*' | cut -d'"' -f4)
 
 # Configurar o perfil temporário no AWS CLI
 aws configure --profile temporary_profile <<EOL
@@ -23,5 +27,4 @@ EOL
 echo "Perfil temporário 'temporary_profile' configurado."
 
 # Você pode usar o perfil temporário para realizar operações na AWS
-# Por exemplo:
-# aws s3 ls --profile temporary_profile
+# Por exemplo
