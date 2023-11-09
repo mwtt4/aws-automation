@@ -2,8 +2,31 @@ import argparse
 import boto3
 import json
 import sys
+from colorama import init, Fore
 
-parser = argparse.ArgumentParser(description="AWS CSIRT AUTOMATION",
+init(strip=False)
+print(r"""{}
+                                                                                                                                                                       
+
+                ░░░░█▐▄▒▒▒▌▌▒▒▌░▌▒▐▐▐▒▒▐▒▒▌▒▀▄▀▄░
+                ░░░█▐▒▒▀▀▌░▀▀▀░░▀▀▀░░▀▀▄▌▌▐▒▒▒▌▐░
+                ░░▐▒▒▀▀▄▐░▀▀▄▄░░░░░░░░░░░▐▒▌▒▒▐░▌
+                ░░▐▒▌▒▒▒▌░▄▄▄▄█▄░░░░░░░▄▄▄▐▐▄▄▀░░
+                ░░▌▐▒▒▒▐░░░░░░░░░░░░░▀█▄░░░░▌▌░░░
+                ▄▀▒▒▌▒▒▐░░░░░░░▄░░▄░░░░░▀▀░░▌▌░░░
+                ▄▄▀▒▐▒▒▐░░░░░░░▐▀▀▀▄▄▀░░░░░░▌▌░░░
+                ░░░░█▌▒▒▌░░░░░▐▒▒▒▒▒▌░░░░░░▐▐▒▀▀▄
+                ░░▄▀▒▒▒▒▐░░░░░▐▒▒▒▒▐░░░░░▄█▄▒▐▒▒▒
+                ▄▀▒▒▒▒▒▄██▀▄▄░░▀▄▄▀░░▄▄▀█▄░█▀▒▒▒▒
+                                               
+                                                                                                                                                        
+                {}{}☁️{}   CSIRT Cloud Automation 
+                                        
+    """.format(Fore.LIGHTBLACK_EX, Fore.BLUE,
+               Fore.LIGHTBLACK_EX, Fore.WHITE))
+
+
+parser = argparse.ArgumentParser(description="",
     usage='use "%(prog)s --help" for more information',
     formatter_class=argparse.RawTextHelpFormatter)
 
@@ -68,6 +91,9 @@ elif args.command == 'list-ec2':
             print(f"Instance ID: {instance['InstanceId']}")
             print(f"Instance Type: {instance['InstanceType']}")
             print(f"State: {instance['State']['Name']}")
+            for interface in instance['NetworkInterfaces']:
+                print(f"Private IP: {interface['PrivateIpAddress']}")
+                print(f"Public IP: {interface.get('Association', {}).get('PublicIp', 'N/A')}")
             print()
 
 elif args.command == 'get-tags-ec2':
@@ -128,3 +154,7 @@ elif args.command == 'list-route53':
     print("Route 53 Hosted Zones:")
     for hosted_zone in response['HostedZones']:
         print(f"- {hosted_zone['Name']}")
+
+
+
+      
