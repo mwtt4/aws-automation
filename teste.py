@@ -6,37 +6,6 @@ import os
 from colorama import init, Fore
 from datetime import datetime
 
-#SALVAR RESULTADO 
-# def salvar_resultados(resultado, pasta):
-#     try:
-#         os.makedirs(pasta, exist_ok=True)
-#         with open(os.path.join(pasta, 'resultados.txt'), 'w') as file:
-#             file.write(resultado)
-#         print(f"Resultados salvos em: {os.path.abspath(pasta)}")
-#     except Exception as e:
-#         print(f"Erro ao salvar os resultados: {e}")
-
-# def main():
-#     # Seção para obter a resposta do usuário
-#     resposta_usuario = input("Deseja salvar as informações dos resultados? (s/n): ").lower()
-
-#     # Se o usuário desejar salvar os resultados
-#     if resposta_usuario == 's':
-#         # Cria uma pasta com a data atual e o horário
-#         pasta_resultados = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-#     else:
-#         # Se o usuário não quiser salvar, a pasta será vazia
-#         pasta_resultados = ''
-
-#     # Restante do código principal
-#     # ...
-
-#     # Exemplo de como usar a função salvar_resultados
-#     # Substitua 'resultado' pelo que você deseja salvar e 'pasta_resultados' pela variável usada no seu script
-#     salvar_resultados('resultado', pasta_resultados)
-
-# if __name__ == "__main__":
-#     main()
  
 class CustomFormatter(argparse.HelpFormatter):
     def _format_action(self, action):
@@ -45,6 +14,11 @@ class CustomFormatter(argparse.HelpFormatter):
             return super()._format_action(action) + '\n\n'
         return super()._format_action(action)
     
+
+parser = argparse.ArgumentParser(description="AWS CSIRT AUTOMATION",
+    usage='use "%(prog)s --help" for more information',
+    formatter_class=argparse.RawTextHelpFormatter)
+
 
     
 init(strip=False)
@@ -66,40 +40,18 @@ print(r"""{}
     """.format(Fore.LIGHTBLACK_EX, Fore.BLUE,
                Fore.LIGHTBLACK_EX, Fore.WHITE))
 
-
-
     
-parser = argparse.ArgumentParser(description="",
-        usage='use "%(prog)s --help" for more information',
-        formatter_class=CustomFormatter)  # Use a classe de formatação personalizada
-
-# Adicione descritivos aos comandos posicionais
-commands_help = {
-    'list-s3': 'List S3 buckets',
-    'list-objects': 'List objects in an S3 bucket',
-    'get-tags-s3': 'Get tags for an S3 bucket',
-    'list-ec2': 'List EC2 instances',
-    'get-tags-ec2': 'Get tags for an EC2 instance',
-    'list-roles': 'List IAM roles',
-    'list-eks': 'List Amazon EKS clusters',
-    'list-cloudfront': 'List CloudFront distributions',
-    'list-route53': 'List Route 53 hosted zones',
-    'info': 'Display general information',
-    'priv-s3': 'Make an S3 bucket private',
-}
-
-subparsers = parser.add_subparsers(title='positional arguments', dest='command')
-
-for command, help_text in commands_help.items():
-    subparser = subparsers.add_parser(command, help=help_text)
-
-# Adicione espaçamento entre colunas usando a função add_argument
+parser.add_argument('command', help='Command to execute', choices=['list-s3', 'list-objects', 'get-tags-s3', 'list-ec2', 'get-tags-ec2', 'list-roles', 'list-eks', 'list-cloudfront', 'list-route53','priv-s3','info','list-volum','create-snapshot'])
 parser.add_argument('--instance-id', help='Use your command and --instance-id "your-instance-id" to get tags about the instance or make snapshot', metavar=' ID')
 parser.add_argument('--bucket', help='Name of the S3 bucket to list objects in, get tags from or priv with priv-s3 command', metavar=' BUCKET')
 parser.add_argument('--assume-role', action='store_true', help='Assume AWS IAM Role')
+parser.add_argument('--volume-id', help='ID of the volume to create a snapshot for', metavar=' VOLUME_ID', required=False)
 
 args = parser.parse_args()
+
+
 ################################## ASSUME ROLE ##################################
+
 
 
 def assumir_funcao(numero_conta, nome_role, nome_sessao):
@@ -126,11 +78,29 @@ if args.assume_role:
     exit()
 
 
+elif args.command == 'get-tags-s3':
+    if not args.bucket:
+        print("Error: You must provide the --bucket argument for 'get-tags-s3' command.")
+    else:
+        s3 = boto3.client('s3')
+
+        # Obtém as tags do bucket especificado
+        try:
+            response = s3.get_bucket_tagging(Bucket=args.bucket)
+            tags = response['TagSet']
+
+            print(f"Tags for bucket '{args.bucket}':")
+            for tag in tags:
+                print(f"- {tag['Key']}: {tag['Value']}")
+        except Exception as e:
+            print(f"Error: {e}")
+
 ################################## AWS CONFIG ##################################
 
 
 
 ################################## BUCKET S3 ##################################
+
 
 if args.command == 'list-s3':
     s3 = boto3.client('s3')
@@ -151,31 +121,15 @@ elif args.command == 'list-objects':
         for obj in response.get('Contents', []):
             print(f"- {obj['Key']}")
 
-elif args.command == 'get-tags-s3':
-    if not args.bucket:
-        print("Error: You must provide the --bucket argument for 'get-tags-s3' command.")
-    else:
-        s3 = boto3.client('s3')
-        
-        # Obtém as tags do bucket especificado
-        try:
-            response = s3.get_bucket_tagging(Bucket=args.bucket)
-            tags = response['TagSet']
-            
-            print(f"Tags for bucket '{args.bucket}':")
-            for tag in tags:
-                print(f"- {tag['Key']}: {tag['Value']}")
-        except Exception as e:
-            print(f"Error: {e}")
-            
-            
+
 
 ################################## EC2 ##################################
 
 elif args.command == 'list-ec2':
-    ec2 = boto3.client('ec2', region_name='sa-east-1')
+    ec2 = boto3.client('ec2', region_name='us-east-1')
 
-    # Lista as instâncias EC2
+# Lista as instâncias EC2
+
     response = ec2.describe_instances()
 
     print("EC2 Instances:")
@@ -191,11 +145,30 @@ elif args.command == 'list-ec2':
             print(f"Launch Date: {instance['LaunchTime']}")
             print()
 
+
+# Lista Volumes
+
+elif args.command == 'list-volum':
+    ec2 = boto3.client('ec2', region_name='us-east-1')
+
+    # Lista os volumes EC2
+    response_volumes = ec2.describe_volumes()
+
+    print("EC2 Volumes:")
+    for volume in response_volumes['Volumes']:
+        print(f"Volume ID: {volume['VolumeId']}")
+        print(f"Volume Type: {volume['VolumeType']}")
+        print(f"Size: {volume['Size']} GiB")
+        print(f"State: {volume['State']}")
+        print(f"Instance: {volume['Attachments'][0]['InstanceId']}")
+        print()
+
+
 elif args.command == 'get-tags-ec2':
     if not args.instance_id:
         print("Error: You must provide the --instance-id argument for 'get-tags-ec2' command.")
     else:
-        ec2 = boto3.client('ec2', region_name='sa-east-1')
+        ec2 = boto3.client('ec2', region_name='us-east-1')
 
         # Obtém as tags da instância EC2 especificada
         try:
@@ -207,25 +180,35 @@ elif args.command == 'get-tags-ec2':
         except Exception as e:
             print(f"Error: {e}")
 
+
+################# CRIAÇÃO DE SNAPSHOT DE VOLUME #################
+
 elif args.command == 'create-snapshot':
-    if not args.instance_id:
-        print("Error: You must provide the --instance-id argument for 'create-snapshot' command.")
-    else:
-        ec2 = boto3.client('ec2')
-        try:
-            # Gere um timestamp único para o nome do snapshot
-            timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-            
-            # Crie um snapshot da instância EC2
-            response = ec2.create_snapshot(
-                VolumeId=args.instance_id,
-                Description=f"Snapshot for instance {args.instance_id} at {timestamp}"
-            )
-            
-            print(f"Snapshot created successfully. Snapshot ID: {response['SnapshotId']}")
-        except Exception as e:
-            print(f"Error creating snapshot: {e}")
-            
+    # Crie um cliente EC2
+    ec2 = boto3.client('ec2', region_name='us-east-1')
+
+    try:
+        # Gere um timestamp único para o nome do snapshot
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+
+        # Se o ID do volume não foi fornecido como argumento, solicite ao usuário
+        if not args.volume_id:
+            args.volume_id = input("Digite o ID do volume: ")
+
+        # Crie um snapshot do volume
+        response = ec2.create_snapshot(
+            VolumeId=args.volume_id,
+            Description=f"Snapshot for volume {args.volume_id} at {timestamp}"
+        )
+
+        print(f"Snapshot created successfully. Snapshot ID: {response['SnapshotId']}")
+
+    except Exception as e:
+        print(f"Error creating snapshot: {e}")
+
+
+
+    
 ################################## IAM ROLES ##################################
 
 elif args.command == 'list-roles':
@@ -269,10 +252,8 @@ elif args.command == 'list-route53':
     for hosted_zone in response['HostedZones']:
         print(f"- {hosted_zone['Name']}")
 
-# ... (seu código existente)
 
 def main():
-    # Coloque o código principal aqui
     print("☁️   Informações da conta:")
     sts = boto3.client('sts')
     response = sts.get_caller_identity()
@@ -321,4 +302,3 @@ if __name__ == "__main__":
             print("Erro: Você deve fornecer o argumento --bucket para o comando 'priv-s3'.")
         else:
             privar_bucket_s3(args.bucket)
-
