@@ -38,7 +38,12 @@ from datetime import datetime
 # if __name__ == "__main__":
 #     main()
  
-
+class CustomFormatter(argparse.HelpFormatter):
+    def _format_action(self, action):
+        if action.nargs == 0:
+            # Adicione um espaçamento maior entre as opções e descrições
+            return super()._format_action(action) + '\n\n'
+        return super()._format_action(action)
     
 
     
@@ -56,19 +61,14 @@ print(r"""{}
                     ⢀⣿⣟⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣹⣿⡄ 
                                                                 
                                                                                                                                                         
-                    {}{}☁️{}    Cloud Automation 
+                    {}{}☁️{}   CSIRT Cloud Automation 
                                         
     """.format(Fore.LIGHTBLACK_EX, Fore.BLUE,
                Fore.LIGHTBLACK_EX, Fore.WHITE))
 
 
-class CustomFormatter(argparse.HelpFormatter):
-    def _format_action(self, action):
-        if action.nargs == 0:
-            # Adicione um espaçamento maior entre as opções e descrições
-            return super()._format_action(action) + '\n\n'
-        return super()._format_action(action)
 
+    
 parser = argparse.ArgumentParser(description="",
         usage='use "%(prog)s --help" for more information',
         formatter_class=CustomFormatter)  # Use a classe de formatação personalizada
@@ -94,12 +94,11 @@ for command, help_text in commands_help.items():
     subparser = subparsers.add_parser(command, help=help_text)
 
 # Adicione espaçamento entre colunas usando a função add_argument
-parser.add_argument('--instance-id', help='Use your command and --instance-id "your-instance-id" to get tags about the instance or make snapshot', metavar='INSTANCE_ID')
-parser.add_argument('--bucket', help='Name of the S3 bucket to list objects in, get tags from or priv with priv-s3 command', metavar='BUCKET')
+parser.add_argument('--instance-id', help='Use your command and --instance-id "your-instance-id" to get tags about the instance or make snapshot', metavar=' ID')
+parser.add_argument('--bucket', help='Name of the S3 bucket to list objects in, get tags from or priv with priv-s3 command', metavar=' BUCKET')
 parser.add_argument('--assume-role', action='store_true', help='Assume AWS IAM Role')
 
 args = parser.parse_args()
-
 ################################## ASSUME ROLE ##################################
 
 
