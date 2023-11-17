@@ -6,6 +6,8 @@ import os
 from colorama import init, Fore
 from datetime import datetime
 
+
+
  
 class CustomFormatter(argparse.HelpFormatter):
     def _format_action(self, action):
@@ -40,12 +42,17 @@ print(r"""{}
     """.format(Fore.LIGHTBLACK_EX, Fore.BLUE,
                Fore.LIGHTBLACK_EX, Fore.WHITE))
 
+
     
-parser.add_argument('command', help='Command to execute', choices=['list-s3', 'list-objects', 'get-tags-s3', 'list-ec2', 'get-tags-ec2', 'list-roles', 'list-eks', 'list-cloudfront', 'list-route53','priv-s3','info','list-volum','create-snapshot'])
+parser.add_argument('command', help='Command to execute', choices=['list-s3', 'list-objects', 'get-tags-s3', 'list-ec2', 'get-tags-ec2', 'list-roles', 'list-eks', 'list-cloudfront', 'list-route53','priv-s3','info','list-volum','create-snapshot','config-query'])
 parser.add_argument('--instance-id', help='Use your command and --instance-id "your-instance-id" to get tags about the instance or make snapshot', metavar=' ID')
 parser.add_argument('--bucket', help='Name of the S3 bucket to list objects in, get tags from or priv with priv-s3 command', metavar=' BUCKET')
 parser.add_argument('--assume-role', action='store_true', help='Assume AWS IAM Role')
 parser.add_argument('--volume-id', help='ID of the volume to create a snapshot for', metavar=' VOLUME_ID', required=False)
+parser.add_argument('--query', help='Expressão de consulta para AWS Config')
+parser.add_argument('--aggregator-name', help='Nome do Configuration Aggregator', required=True)
+parser.add_argument('--search-ec2', help='Nome da instância EC2 para buscar')
+parser.add_argument('--search-s3', help='Nome do bucket S3 para buscar')
 
 args = parser.parse_args()
 
@@ -97,7 +104,55 @@ elif args.command == 'get-tags-s3':
 
 ################################## AWS CONFIG ##################################
 
+# Função para realizar a consulta no AWS Config
 
+def get_config_results(query, aggregator_name):
+    config_client = boto3.client('config',region_name='us-east-1')
+
+    try:
+        response = config_client.select_aggregate_resource_config(
+            Expression=query,
+            ConfigurationAggregatorName=aggregator_name,
+        )
+
+        results = response.get('Results', [])
+        return results
+    except Exception as e:
+        print(f"Erro ao realizar a consulta: {e}")
+        return []
+ 
+if args.command == 'config-query':
+    if args.search_ec2:
+        query_expression = f'SELECT resourceId, resourceName, accountId, resourceType WHERE resourceType=\'AWS::EC2::Instance\' AND resourceId=\'{args.search_ec2}\''
+    elif args.search_s3:
+        query_expression = f'SELECT resourceId, resourceName, accountId, resourceType WHERE resourceType=\'AWS::S3::Bucket\' AND resourceId=\'{args.search_s3}\''
+    elif args.query:
+        query_expression = args.query
+    else:
+        print("Erro: Você deve fornecer o argumento --aggregator-name, --search-s3 ou --search-ec2 para o comando 'config-query'.")
+        exit()
+
+    results = get_config_results(query_expression, args.aggregator_name)
+    
+    
+    if results:
+        print("Resultados:")
+        for result in results:
+            print(result)
+    else:
+        print("Nenhum resultado encontrado.")
+    
+# if args.command == 'config-query':
+#     if not args.query:
+#         print("Erro: Você deve fornecer o argumento --query para o comando 'config-query'.")
+#     else:
+#         results = get_config_results(args.query, args.aggregator_name)
+#         if results:
+#             print("Resultados:")
+#             for result in results:
+#                 print(result)
+#         else:
+#             print("Nenhum resultado encontrado.")   
 
 ################################## BUCKET S3 ##################################
 
